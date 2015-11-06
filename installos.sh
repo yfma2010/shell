@@ -20,55 +20,37 @@ a
 1
 w
 EOF
-echo  "fdisk Done"
 
-sync &&
-echo  "mkswap and "${disk}2"  and mke2fs" ${disk}1 
-sleep 1
-mkswap ${disk}2 &&
-swapon ${disk}2 &&
-mke2fs -I 128 -jv ${disk}1 &&
-#chmn ${disk}1  &&
+echo  "mkfs.ext3" ${disk}1 
+mkfs.ext3 ${disk}1 &&
+echo  "fdisk Done"
 sync 
 }
 
 tarfuc()
 {
 echo "tar system"
-mkdir -p /mnt/lfs
-mount  ${disk}1  /mnt/lfs &&
-cd /mnt/lfs && 
+
+mount  ${disk}1  /mnt/ &&
+cd /mnt/ && 
 tar   -xpf  ${tar_file}  && 
-mknod -m 600 /mnt/lfs/dev/console c 5 1
-mknod -m 666 /mnt/lfs/dev/null c 1 3
+mkdir -p /mnt/proc 
+mkdir -p /mnt/dev/pts
+mkdir -p /mnt/sys
+mount -t proc none /mnt/proc 
+mount -o bind /dev /mnt/dev
+mount -o bind /sys /mnt/sys 
+mount -t devpts devpts /mnt/dev/pts
+chroot /mnt
+grub-install /dev/sdb --root-directory=/mnt
 sync &&
-umount -l /mnt/lfs
+umount -l /mnt
 
 }
 
-grubfuc()
-{
-echo -e "\\033[1;34mpassed:\\033[0;39m grub and made the systme bootable."
-sec_disk="/dev/sdb"
-if [ ${disk} == ${sec_disk} ];then
-${grub_name} <<EOF
-root (hd1,0)
-setup (hd1)
-quit
-EOF
-else
-${grub_name} <<EOF
-root (hd0,0)
-setup (hd0)
-quit
-EOF
-fi
-sync
-}
 
 fdiskfuc 
 tarfuc 
-grubfuc 
-
+sync
 echo  "if there is no error, Congratulion, installation finished!"
 
